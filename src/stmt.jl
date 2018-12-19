@@ -1,39 +1,13 @@
-C2JULIA_OPERATOR_MAP = Dict()
-
-
-translate(cursor::CLCursor) = "not implemented yet"
-
-
 translate(cursor::CLDeclStmt) = Expr(:null)
 
-translate(cursor::CLIntegerLiteral) = Meta.parse(tokenize(cursor)[1].text)
-translate(cursor::CLDeclRefExpr) = translate(getref(cursor))
-translate(cursor::CLVarDecl) = Meta.parse(spelling(cursor))
-
-
-function translate(cursor::CLUnexposedExpr)
+function translate(cursor::CLCompoundStmt)
     child_cursors = children(cursor)
-    if length(child_cursors) == 1
-        translate(child_cursors[1])
-    else
-        @warn "translate subroutine for $cursor is not implemented." dumpobj(cursor)
-        return Expr(:null)
+    block = Expr(:block)
+    for c in child_cursors
+        push!(block.args, translate(c))
     end
+    return block
 end
-
-
-function translate(cursor::CLBinaryOperator)
-    child_cursors = children(cursor)
-    toks = tokenize(cursor)
-    op = toks[2].text
-    if haskey(C2JULIA_OPERATOR_MAP, op)
-        op_sym = C2JULIA_OPERATOR_MAP[op]
-    else
-        op_sym = Symbol(op)
-    end
-    return Expr(:call, op_sym, translate(child_cursors[1]), translate(child_cursors[2]))
-end
-
 
 function translate(cursor::CLIfStmt)
     child_cursors = children(cursor)
@@ -50,27 +24,17 @@ function translate(cursor::CLIfStmt)
     return if_expr
 end
 
-function translate(cursor::CLCompoundStmt)
-    child_cursors = children(cursor)
-    block = Expr(:block)
-    for c in child_cursors
-        push!(block.args, translate(c))
-    end
-    return block
-end
-
-
 function translate(cursor::CLWhileStmt)
     child_cursors = children(cursor)
-    condition = translate(child_cursors[1])
-    body = translate(child_cursors[2])
+    condition = first(child_cursors) |> translate
+    body = last(child_cursors) |> translate
     return Expr(:while, condition, body)
 end
 
 function translate(cursor::CLDoStmt)
     child_cursors = children(cursor)
-    body = translate(child_cursors[1])
-    condition = translate(child_cursors[2])
+    condition = first(child_cursors) |> translate
+    body = last(child_cursors) |> translate
     push!(body.args, Expr(:call, :||, condition, Expr(:break)))
     return Expr(:while, true, body)
 end
@@ -78,7 +42,7 @@ end
 # this is a workaround since libclang somehow striped those null objects in `for( ; ; )`
 function get_init_cond_inc_body(cursor::CLForStmt)
     child_cursors = children(cursor)
-    toks = collect(tokenize(cursor))
+    toks = tokenize(cursor) |> collect
     left_paren_idx = 2
     right_paren_idx = findfirst(x->x.text==")", toks)
     idxs = findall(x->x.text==";", toks[1:right_paren_idx])
@@ -106,7 +70,7 @@ function get_init_cond_inc_body(cursor::CLForStmt)
     end
 
     @assert idx_count == length(child_cursors) "unknown for-loop structure: $cursor"
-    body = translate(child_cursors[end])
+    body = last(child_cursors) |> translate
 
     return init, condition, increment, body
 end
