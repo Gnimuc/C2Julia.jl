@@ -3,3 +3,6 @@ using Test
 
 include("if.jl")
 include("loop.jl")
+include("literal.jl")
+include("operator.jl")
+
