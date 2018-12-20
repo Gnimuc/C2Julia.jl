@@ -24,6 +24,10 @@ function translate(cursor::CLIfStmt)
     return if_expr
 end
 
+translate(cursor::CLGotoStmt) = Expr(:macrocall, Symbol("@goto"), nothing, translate(children(cursor)[]))
+translate(cursor::CLLabelStmt) = Expr(:macrocall, Symbol("@label"), nothing, Symbol(name(cursor)))
+translate(cursor::CLLabelRef) = Symbol(name(cursor))
+
 function translate(cursor::CLWhileStmt)
     child_cursors = children(cursor)
     condition = first(child_cursors) |> translate
