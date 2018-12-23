@@ -13,6 +13,7 @@ include("literal.jl")
 include("operator.jl")
 include("expr.jl")
 include("stmt.jl")
+include("decl.jl")
 
 export translate
 

@@ -1,11 +1,18 @@
-translate(cursor::CLDeclStmt) = Expr(:null)
+function translate(cursor::CLDeclStmt)
+    child_cursors = children(cursor)
+    decl_exprs = Expr[]
+    for c in child_cursors
+        push!(decl_exprs, Expr(:local, translate(c)))
+    end
+    return decl_exprs
+end
 
 function translate(cursor::CLCompoundStmt)
     child_cursors = children(cursor)
     block = Expr(:block)
     for c in child_cursors
         expr = translate(c)
-        if expr isa Tuple
+        if expr isa Tuple || expr isa Vector
             push!(block.args, expr...)
         else
             push!(block.args, expr)
@@ -32,8 +39,8 @@ end
 translate(cursor::CLBreakStmt) = Expr(:break)
 translate(cursor::CLContinueStmt) = Expr(:continue)
 translate(cursor::CLGotoStmt) = Expr(:macrocall, Symbol("@goto"), nothing, translate(children(cursor)[]))
-translate(cursor::CLLabelStmt) = Expr(:macrocall, Symbol("@label"), nothing, Symbol(name(cursor)))
-translate(cursor::CLLabelRef) = Symbol(name(cursor))
+translate(cursor::CLLabelStmt) = Expr(:macrocall, Symbol("@label"), nothing, Symbol(spelling(cursor)))
+translate(cursor::CLLabelRef) = Symbol(spelling(cursor))
 
 function translate(cursor::CLWhileStmt)
     child_cursors = children(cursor)
