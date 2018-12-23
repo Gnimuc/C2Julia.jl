@@ -16,29 +16,10 @@ const C2JULIA_UNARY_OPERATOR_MAP = Dict("+" => One2OneMappedUnaryOperator(),
                                         "&" => AddressOperator(),
                                         "*" => IndirectionOperator(),
                                         )
-# handy macro for ++x
-macro plusplus(x)
-    @gensym tmp
-    quote
-        tmp = $(esc(x))
-        $(esc(x)) += 1
-        tmp
-    end
-end
-
-# handy macro for --x
-macro minusminus(x)
-    @gensym tmp
-    quote
-        tmp = $(esc(x))
-        $(esc(x)) -= 1
-        tmp
-    end
-end
 
 function translate(::PrefixIncrement, cursor::CLUnaryOperator, op::AbstractString, toks::TokenList)
     if typeof(toks[1]) == Punctuation
-        return Expr(:macrocall, Symbol("@plusplus"), nothing, Symbol(toks[2].text))
+        return Expr(:macrocall, Symbol("@+"), nothing, Symbol(toks[2].text))
     else
         return Expr(:(+=), Symbol(toks[1].text), 1)
     end
@@ -46,7 +27,7 @@ end
 
 function translate(::PrefixDecrement, cursor::CLUnaryOperator, op::AbstractString, toks::TokenList)
     if typeof(toks[1]) == Punctuation
-        return Expr(:macrocall, Symbol("@minusminus"), nothing, Symbol(toks[2].text))
+        return Expr(:macrocall, Symbol("@-"), nothing, Symbol(toks[2].text))
     else
         return Expr(:(-=), Symbol(toks[1].text), 1)
     end
@@ -70,3 +51,21 @@ end
 
 translate(::AddressOperator, cursor::CLUnaryOperator, op::AbstractString, toks::TokenList) = "translate rule for unary operator & has not implemented yet"
 translate(::IndirectionOperator, cursor::CLUnaryOperator) = "translate rule for unary operator * has not implemented yet"
+
+
+
+C2JULIA_BINARY_OPERATOR_MAP = Dict()
+
+function translate(cursor::CLBinaryOperator)
+    child_cursors = children(cursor)
+    toks = tokenize(cursor)
+    op = toks[2].text
+    if haskey(C2JULIA_BINARY_OPERATOR_MAP, op)
+        op_sym = C2JULIA_BINARY_OPERATOR_MAP[op]
+    else
+        op_sym = Symbol(op)
+    end
+    lhs = first(child_cursors) |> translate
+    rhs = last(child_cursors) |> translate
+    return Expr(:call, op_sym, lhs, rhs)
+end

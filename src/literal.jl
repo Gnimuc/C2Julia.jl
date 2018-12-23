@@ -44,7 +44,9 @@ end
 
 function translate(cursor::CLIntegerLiteral)
     tok = tokenize(cursor)[1]
-    if startswith(tok.text, "0") && !startswith(lowercase(tok.text), "0x")
+    if tok.text != "0" &&
+       startswith(tok.text, "0") &&
+       !startswith(lowercase(tok.text), "0x")
         Meta.parse("0o"*literally(tok))
     else
         Meta.parse(literally(tok))

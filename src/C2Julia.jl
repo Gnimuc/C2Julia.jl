@@ -6,6 +6,9 @@ import Clang: TokenList
 
 translate(cursor::CLCursor) = "not implemented yet"
 
+include("CSyntax.jl")
+using .CSyntax
+
 include("literal.jl")
 include("operator.jl")
 include("expr.jl")

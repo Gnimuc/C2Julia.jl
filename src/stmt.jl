@@ -24,6 +24,8 @@ function translate(cursor::CLIfStmt)
     return if_expr
 end
 
+translate(cursor::CLBreakStmt) = Expr(:break)
+translate(cursor::CLContinueStmt) = Expr(:continue)
 translate(cursor::CLGotoStmt) = Expr(:macrocall, Symbol("@goto"), nothing, translate(children(cursor)[]))
 translate(cursor::CLLabelStmt) = Expr(:macrocall, Symbol("@label"), nothing, Symbol(name(cursor)))
 translate(cursor::CLLabelRef) = Symbol(name(cursor))
@@ -37,8 +39,8 @@ end
 
 function translate(cursor::CLDoStmt)
     child_cursors = children(cursor)
-    condition = first(child_cursors) |> translate
-    body = last(child_cursors) |> translate
+    condition = last(child_cursors) |> translate
+    body = first(child_cursors) |> translate
     push!(body.args, Expr(:call, :||, condition, Expr(:break)))
     return Expr(:while, true, body)
 end
@@ -92,3 +94,6 @@ function translate(cursor::CLForStmt)
     push!(let_expr.args, Expr(:while, cond, body))
     return let_expr
 end
+
+translate(cursor::CLReturnStmt) = Expr(:return, translate(children(cursor)[]))
+translate(cursor::CLNullStmt) = Expr(:null)

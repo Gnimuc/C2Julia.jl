@@ -18,11 +18,11 @@ using Test
       op = children(body)[7]
       @test translate(op) == :(Cint(z))
       op = children(body)[8]
-      @test string(translate(op)) == "@plusplus y"
+      @test string(translate(op)) == "@+ y"
       op = children(body)[9]
       @test translate(op) == :(y+=1)
       op = children(body)[10]
-      @test string(translate(op)) == "@minusminus x"
+      @test string(translate(op)) == "@- x"
       op = children(body)[11]
       @test translate(op) == :(x-=1)
    end
