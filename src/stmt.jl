@@ -4,7 +4,12 @@ function translate(cursor::CLCompoundStmt)
     child_cursors = children(cursor)
     block = Expr(:block)
     for c in child_cursors
-        push!(block.args, translate(c))
+        expr = translate(c)
+        if expr isa Tuple
+            push!(block.args, expr...)
+        else
+            push!(block.args, expr)
+        end
     end
     return block
 end
@@ -97,3 +102,29 @@ end
 
 translate(cursor::CLReturnStmt) = Expr(:return, translate(children(cursor)[]))
 translate(cursor::CLNullStmt) = Expr(:null)
+
+
+function translate(cursor::CLCaseStmt)
+    child_cursors = children(cursor)
+    case_expr = Expr(:macrocall, Symbol("@case"), nothing, translate(first(child_cursors)))
+    body = translate(last(child_cursors))
+    if body isa Tuple
+        return (case_expr, body...)
+    else
+        return case_expr, body
+    end
+end
+
+function translate(cursor::CLDefaultStmt)
+    child_cursors = children(cursor)
+    default_expr = Expr(:macrocall, Symbol("@default"), nothing)
+    body = translate(child_cursors[])
+    return default_expr, body
+end
+
+function translate(cursor::CLSwitchStmt)
+    child_cursors = children(cursor)
+    constexpr = first(child_cursors) |> translate
+    body_expr = last(child_cursors) |> translate
+    Expr(:macrocall, Symbol("@switch"), nothing, constexpr, body_expr)
+end
