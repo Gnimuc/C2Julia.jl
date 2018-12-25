@@ -1,12 +1,16 @@
 translate(cursor::CLDeclRefExpr) = Symbol(spelling(cursor))
+translate(cursor::CLParenExpr) = translate(children(cursor)[])
 
-function translate(cursor::CLVarDecl)
-    child_cursors = children(cursor)
-    if isempty(child_cursors)
-        return Symbol(spelling(cursor))
-    else
-        return Expr(:(=), Symbol(spelling(cursor)), translate(child_cursors[]))
-    end
+function translate(cursor::CLMemberRefExpr)
+    sym = Symbol(spelling(cursor))
+    return Expr(:(.), translate(children(cursor)[]), Meta.quot(sym))
+end
+
+function translate(cursor::CLCStyleCastExpr)
+    child = children(cursor)[]
+    jltype_sym = clang2julia(type(cursor))
+    jltype_sym == :Cvoid && return translate(child)  # don't cast anything to Nothing
+    Expr(:call, jltype_sym, translate(child))
 end
 
 function translate(cursor::CLUnexposedExpr)

@@ -1,5 +1,9 @@
 module CSyntax
 
+const malloc = Base.Libc.malloc
+const free = Base.Libc.free
+export malloc, free
+
 export @+, @-
 export @switch
 

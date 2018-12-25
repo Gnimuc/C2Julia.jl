@@ -38,13 +38,16 @@ function translate(::One2OneMappedUnaryOperator, cursor::CLUnaryOperator, op::Ab
     Expr(:call, Symbol(op), operand)
 end
 
-translate(cursor::CLCStyleCastExpr) = Expr(:call, Symbol(clang2julia(type(cursor))), translate(children(cursor)[]))
-
 function translate(cursor::CLUnaryOperator)
     op = ""
     toks = tokenize(cursor)
+    # hmm, this is just a workaround, pending https://reviews.llvm.org/D10833
     for tok in toks
-        typeof(tok) == Punctuation && (op = tok.text)
+        txt = tok.text
+        if typeof(tok) == Punctuation && haskey(C2JULIA_UNARY_OPERATOR_MAP, txt)
+            op = txt
+            break
+        end
     end
     return translate(C2JULIA_UNARY_OPERATOR_MAP[op], cursor, op, toks)
 end
@@ -53,19 +56,52 @@ translate(::AddressOperator, cursor::CLUnaryOperator, op::AbstractString, toks::
 translate(::IndirectionOperator, cursor::CLUnaryOperator) = "translate rule for unary operator * has not implemented yet"
 
 
+abstract type BinaryOperator end
 
-C2JULIA_BINARY_OPERATOR_MAP = Dict()
+for op in [:BitwiseOperator, :One2OneMappedBinaryOperator]
+    @eval struct $op <: BinaryOperator end
+end
+
+const C2JULIA_BINARY_OPERATOR_MAP = Dict("=" => One2OneMappedBinaryOperator(),
+                                         "+" => One2OneMappedBinaryOperator(),
+                                         "-" => One2OneMappedBinaryOperator(),
+                                         "*" => One2OneMappedBinaryOperator(),
+                                         "/" => One2OneMappedBinaryOperator(),
+                                         "%" => One2OneMappedBinaryOperator(),
+                                         "<" => One2OneMappedBinaryOperator(),
+                                         ">" => One2OneMappedBinaryOperator(),
+                                         "~" => BitwiseOperator(),
+                                         "^" => BitwiseOperator(),
+                                         "|" => BitwiseOperator(),
+                                         "&" => BitwiseOperator(),
+                                         "<<" => BitwiseOperator(),
+                                         ">>" => BitwiseOperator(),
+                                         "||" => One2OneMappedBinaryOperator(),
+                                         "&&" => One2OneMappedBinaryOperator(),
+                                         "==" => One2OneMappedBinaryOperator(),
+                                         "!=" => One2OneMappedBinaryOperator(),
+                                         ">=" => One2OneMappedBinaryOperator(),
+                                         "<=" => One2OneMappedBinaryOperator(),
+                                         "+=" => One2OneMappedBinaryOperator(),
+                                         "-=" => One2OneMappedBinaryOperator(),
+                                         "*=" => One2OneMappedBinaryOperator(),
+                                         "/=" => One2OneMappedBinaryOperator(),
+                                         "%=" => One2OneMappedBinaryOperator(),
+                                        )
 
 function translate(cursor::CLBinaryOperator)
-    child_cursors = children(cursor)
+    op = ""
     toks = tokenize(cursor)
-    op = toks[2].text
-    if haskey(C2JULIA_BINARY_OPERATOR_MAP, op)
-        op_sym = C2JULIA_BINARY_OPERATOR_MAP[op]
-    else
-        op_sym = Symbol(op)
+    # hmm, this is just a workaround, pending https://reviews.llvm.org/D10833
+    for tok in toks
+        txt = tok.text
+        if typeof(tok) == Punctuation && haskey(C2JULIA_BINARY_OPERATOR_MAP, txt)
+            op = txt
+            break
+        end
     end
+    child_cursors = children(cursor)
     lhs = first(child_cursors) |> translate
     rhs = last(child_cursors) |> translate
-    return Expr(:call, op_sym, lhs, rhs)
+    return Expr(:call, Symbol(op), lhs, rhs)
 end

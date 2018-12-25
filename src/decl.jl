@@ -1,3 +1,12 @@
+function translate(cursor::CLVarDecl)
+    child_cursors = children(cursor)
+    if isempty(child_cursors)
+        return Symbol(spelling(cursor))
+    else
+        return Expr(:(=), Symbol(spelling(cursor)), translate(child_cursors[]))
+    end
+end
+
 translate(cursor::CLParmDecl) = Symbol(spelling(cursor))
 
 function translate(cursor::CLFunctionDecl)
