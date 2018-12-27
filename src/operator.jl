@@ -33,6 +33,14 @@ function translate(::PrefixDecrement, cursor::CLUnaryOperator, op::AbstractStrin
     end
 end
 
+function translate(::AddressOperator, cursor::CLUnaryOperator, op::AbstractString, toks::TokenList)
+    return children(cursor) |> first |> translate
+end
+
+function translate(::IndirectionOperator, cursor::CLUnaryOperator, op::AbstractString, toks::TokenList)
+    return children(cursor) |> first |> translate
+end
+
 function translate(::One2OneMappedUnaryOperator, cursor::CLUnaryOperator, op::AbstractString, toks::TokenList)
     operand = children(cursor) |> first |> translate
     Expr(:call, Symbol(op), operand)
@@ -52,41 +60,38 @@ function translate(cursor::CLUnaryOperator)
     return translate(C2JULIA_UNARY_OPERATOR_MAP[op], cursor, op, toks)
 end
 
-translate(::AddressOperator, cursor::CLUnaryOperator, op::AbstractString, toks::TokenList) = "translate rule for unary operator & has not implemented yet"
-translate(::IndirectionOperator, cursor::CLUnaryOperator) = "translate rule for unary operator * has not implemented yet"
-
-
 abstract type BinaryOperator end
 
-for op in [:BitwiseOperator, :One2OneMappedBinaryOperator]
+for op in [:ArithmeticBinaryOperator, :RelationalBinaryOperator,
+           :BitwiseBinaryOperator, :LogicalBinaryOperator, :AssignmentBinaryOperator]
     @eval struct $op <: BinaryOperator end
 end
 
-const C2JULIA_BINARY_OPERATOR_MAP = Dict("=" => One2OneMappedBinaryOperator(),
-                                         "+" => One2OneMappedBinaryOperator(),
-                                         "-" => One2OneMappedBinaryOperator(),
-                                         "*" => One2OneMappedBinaryOperator(),
-                                         "/" => One2OneMappedBinaryOperator(),
-                                         "%" => One2OneMappedBinaryOperator(),
-                                         "<" => One2OneMappedBinaryOperator(),
-                                         ">" => One2OneMappedBinaryOperator(),
-                                         "~" => BitwiseOperator(),
-                                         "^" => BitwiseOperator(),
-                                         "|" => BitwiseOperator(),
-                                         "&" => BitwiseOperator(),
-                                         "<<" => BitwiseOperator(),
-                                         ">>" => BitwiseOperator(),
-                                         "||" => One2OneMappedBinaryOperator(),
-                                         "&&" => One2OneMappedBinaryOperator(),
-                                         "==" => One2OneMappedBinaryOperator(),
-                                         "!=" => One2OneMappedBinaryOperator(),
-                                         ">=" => One2OneMappedBinaryOperator(),
-                                         "<=" => One2OneMappedBinaryOperator(),
-                                         "+=" => One2OneMappedBinaryOperator(),
-                                         "-=" => One2OneMappedBinaryOperator(),
-                                         "*=" => One2OneMappedBinaryOperator(),
-                                         "/=" => One2OneMappedBinaryOperator(),
-                                         "%=" => One2OneMappedBinaryOperator(),
+const C2JULIA_BINARY_OPERATOR_MAP = Dict("+" => ArithmeticBinaryOperator(),
+                                         "-" => ArithmeticBinaryOperator(),
+                                         "*" => ArithmeticBinaryOperator(),
+                                         "/" => ArithmeticBinaryOperator(),
+                                         "%" => ArithmeticBinaryOperator(),
+                                         "<" => RelationalBinaryOperator(),
+                                         ">" => RelationalBinaryOperator(),
+                                         "==" => RelationalBinaryOperator(),
+                                         "!=" => RelationalBinaryOperator(),
+                                         ">=" => RelationalBinaryOperator(),
+                                         "<=" => RelationalBinaryOperator(),
+                                         "~" => BitwiseBinaryOperator(),
+                                         "^" => BitwiseBinaryOperator(),
+                                         "|" => BitwiseBinaryOperator(),
+                                         "&" => BitwiseBinaryOperator(),
+                                         "<<" => BitwiseBinaryOperator(),
+                                         ">>" => BitwiseBinaryOperator(),
+                                         "||" => LogicalBinaryOperator(),
+                                         "&&" => LogicalBinaryOperator(),
+                                         "=" => AssignmentBinaryOperator(),
+                                         "+=" => AssignmentBinaryOperator(),
+                                         "-=" => AssignmentBinaryOperator(),
+                                         "*=" => AssignmentBinaryOperator(),
+                                         "/=" => AssignmentBinaryOperator(),
+                                         "%=" => AssignmentBinaryOperator(),
                                         )
 
 function translate(cursor::CLBinaryOperator)
@@ -97,7 +102,9 @@ function translate(cursor::CLBinaryOperator)
         txt = tok.text
         if typeof(tok) == Punctuation && haskey(C2JULIA_BINARY_OPERATOR_MAP, txt)
             op = txt
-            break
+            if op != "*"  # possible x*
+                break
+            end
         end
     end
     child_cursors = children(cursor)

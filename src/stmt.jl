@@ -1,8 +1,13 @@
-function translate(cursor::CLDeclStmt)
+function translate(cursor::CLDeclStmt)::Vector{Expr}
     child_cursors = children(cursor)
     decl_exprs = Expr[]
     for c in child_cursors
-        push!(decl_exprs, Expr(:local, translate(c)))
+        subexpr = translate(c)
+        if subexpr isa Symbol
+            push!(decl_exprs, Expr(:local, translate(c)))
+        else
+            push!(decl_exprs, subexpr)
+        end
     end
     return decl_exprs
 end
@@ -12,7 +17,7 @@ function translate(cursor::CLCompoundStmt)
     block = Expr(:block)
     for c in child_cursors
         expr = translate(c)
-        if expr isa Tuple || expr isa Vector
+        if expr isa Vector
             push!(block.args, expr...)
         else
             push!(block.args, expr)
@@ -107,26 +112,34 @@ function translate(cursor::CLForStmt)
     return let_expr
 end
 
-translate(cursor::CLReturnStmt) = Expr(:return, translate(children(cursor)[]))
-translate(cursor::CLNullStmt) = Expr(:null)
-
-
-function translate(cursor::CLCaseStmt)
+function translate(cursor::CLReturnStmt)
     child_cursors = children(cursor)
-    case_expr = Expr(:macrocall, Symbol("@case"), nothing, translate(first(child_cursors)))
-    body = translate(last(child_cursors))
-    if body isa Tuple
-        return (case_expr, body...)
+    if isempty(child_cursors)
+        Expr(:return, nothing)
     else
-        return case_expr, body
+        Expr(:return, translate(child_cursors[]))
     end
 end
 
-function translate(cursor::CLDefaultStmt)
+translate(cursor::CLNullStmt) = Expr(:null)
+
+Base.length(::Expr) = 1
+Base.iterate(x::Expr) = (x, nothing)
+
+function translate(cursor::CLCaseStmt)::Vector{Expr}
+    child_cursors = children(cursor)
+    case_expr = Expr(:macrocall, Symbol("@case"), nothing, translate(first(child_cursors)))
+    exprs = Expr[case_expr]
+    append!(exprs, translate(last(child_cursors)))
+    return exprs
+end
+
+function translate(cursor::CLDefaultStmt)::Vector{Expr}
     child_cursors = children(cursor)
     default_expr = Expr(:macrocall, Symbol("@default"), nothing)
-    body = translate(child_cursors[])
-    return default_expr, body
+    exprs = Expr[default_expr]
+    append!(exprs, translate(last(child_cursors)))
+    return exprs
 end
 
 function translate(cursor::CLSwitchStmt)

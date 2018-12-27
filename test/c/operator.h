@@ -20,5 +20,7 @@ int operators(void) {
     int *xp = &x;
     *xp;
 
+	(bool)(z+1);
+
     return 0;
 }

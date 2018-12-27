@@ -7,13 +7,26 @@ function translate(cursor::CLMemberRefExpr)
 end
 
 function translate(cursor::CLCStyleCastExpr)
-    child = children(cursor)[]
+    child_cursors = children(cursor)
     jltype_sym = clang2julia(type(cursor))
-    jltype_sym == :Cvoid && return translate(child)  # don't cast anything to Nothing
-    Expr(:call, jltype_sym, translate(child))
+    if jltype_sym == :Cvoid
+        return translate(last(child_cursors))  # don't cast anything to Nothing
+    else
+        return Expr(:call, jltype_sym, translate(last(child_cursors)))
+    end
 end
 
 function translate(cursor::CLUnexposedExpr)
+    child_cursors = children(cursor)
+    if length(child_cursors) == 1
+        translate(child_cursors[])
+    else
+        @warn "translate subroutine for $cursor is not implemented." dumpobj(cursor)
+        return Expr(:null)
+    end
+end
+
+function translate(cursor::CLUnaryExpr)
     child_cursors = children(cursor)
     if length(child_cursors) == 1
         translate(child_cursors[])

@@ -7,6 +7,15 @@ function translate(cursor::CLVarDecl)
     end
 end
 
+function translate(cursor::CLTypeRef)
+    origin = getref(cursor)
+    if kind(origin) == CXCursor_StructDecl
+        return Expr(:call, Symbol(spelling(origin)))
+    else
+        @error "not implemented yet"
+    end
+end
+
 translate(cursor::CLParmDecl) = Symbol(spelling(cursor))
 
 function translate(cursor::CLFunctionDecl)

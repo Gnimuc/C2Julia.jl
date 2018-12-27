@@ -25,5 +25,11 @@ using Test
         @test string(translate(op)) == "@- x"
         op = children(body)[11]
         @test translate(op) == :(x-=1)
+        # op = children(body)[12]
+        # @test translate(op) == :(xp = Ref(x))
+        # op = children(body)[13]
+        # @test translate(op) == :(xp[])
+        op = children(body)[14]
+        @test translate(op) == :(Bool(z+1))
     end
 end
