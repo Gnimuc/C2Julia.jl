@@ -31,5 +31,7 @@ using Test
         @test string(translate(op)) == "xp[] = 1"
         op = children(body)[14]
         @test translate(op).expr == :(Bool(z+1))
+        op = children(body)[15]
+        @test string(translate(op).expr) == "x == 0 && y < 1 || z == 3"
     end
 end

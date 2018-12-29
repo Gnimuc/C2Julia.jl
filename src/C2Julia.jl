@@ -4,7 +4,7 @@ using Clang
 using Clang.LibClang
 import Clang: TokenList
 
-translate(cursor::CLCursor) = "not implemented yet"
+translate(cursor::CLCursor) = (@warn cursor; MetaExpr("not implemented yet"))
 
 include("CSyntax.jl")
 using .CSyntax

@@ -40,6 +40,10 @@ end
 function translate(::AddressOperator, cursor::CLUnaryOperator, op::AbstractString, toks::TokenList)
     meta = translate(first(children(cursor)))
     jltype_sym = clang2julia(type(meta.leafcursor))
+    if jltype_sym isa Expr
+        # dirty workaround
+        jltype_sym = jltype_sym.args[2]
+    end
     if isdefined(Base, jltype_sym) && isbitstype(getfield(Base, jltype_sym))  # TODO: ismutable?
         # immutable isbitstypes needs to be translated to `Ref`s to match C's behavior
         meta.expr = Expr(:call, :Ref, meta.expr)
@@ -69,11 +73,13 @@ function translate(cursor::CLUnaryOperator)
     op = ""
     toks = tokenize(cursor)
     # hmm, this is just a workaround, pending https://reviews.llvm.org/D10833
-    for tok in toks
-        txt = tok.text
-        if typeof(tok) == Punctuation && haskey(C2JULIA_UNARY_OPERATOR_MAP, txt)
-            op = txt
-            break
+    GC.@preserve toks begin
+        for tok in toks
+            txt = tok.text
+            if typeof(tok) == Punctuation && haskey(C2JULIA_UNARY_OPERATOR_MAP, txt)
+                op = txt
+                break
+            end
         end
     end
     return translate(C2JULIA_UNARY_OPERATOR_MAP[op], cursor, op, toks)
@@ -114,20 +120,27 @@ const C2JULIA_BINARY_OPERATOR_MAP = Dict("+" => ArithmeticBinaryOperator(),
                                         )
 
 function translate(cursor::CLBinaryOperator)
-    op = ""
-    toks = tokenize(cursor)
     # hmm, this is just a workaround, pending https://reviews.llvm.org/D10833
-    for tok in toks
-        txt = tok.text
-        if typeof(tok) == Punctuation && haskey(C2JULIA_BINARY_OPERATOR_MAP, txt)
-            op = txt
-            if op != "*"  # possible x*
+    child_cursors = children(cursor)
+    lhs_cursor = first(child_cursors)
+    rhs_cursor = last(child_cursors)
+    lhs_toklist = tokenize(lhs_cursor)
+    rhs_toklist = tokenize(rhs_cursor)
+    GC.@preserve lhs_toklist rhs_toklist begin
+        lhs_toks = collect(lhs_toklist)
+        rhs_toks = collect(rhs_toklist)
+        toks = tokenize(cursor)
+        toksdiff = setdiff(toks, union(lhs_toks, rhs_toks))
+        op = ""
+        for tok in toksdiff
+            txt = tok.text
+            if typeof(tok) == Punctuation && haskey(C2JULIA_BINARY_OPERATOR_MAP, txt)
+                op = txt
                 break
             end
         end
     end
-    child_cursors = children(cursor)
-    lhs_meta = translate(first(child_cursors))
-    rhs_meta = translate(last(child_cursors))
+    lhs_meta = translate(lhs_cursor)
+    rhs_meta = translate(rhs_cursor)
     return MetaExpr(Expr(:call, Symbol(op), lhs_meta.expr, rhs_meta.expr))
 end
