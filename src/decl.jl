@@ -1,33 +1,38 @@
 function translate(cursor::CLVarDecl)
     child_cursors = children(cursor)
+    cursor_sym = Symbol(spelling(cursor))
     if isempty(child_cursors)
-        return Symbol(spelling(cursor))
+        return MetaExpr(cursor_sym, cursor)
     else
-        return Expr(:(=), Symbol(spelling(cursor)), translate(child_cursors[]))
+        meta = translate(first(child_cursors))
+        meta.expr = Expr(:(=), cursor_sym, meta.expr)
+        return meta
     end
 end
 
 function translate(cursor::CLTypeRef)
     origin = getref(cursor)
     if kind(origin) == CXCursor_StructDecl
-        return Expr(:call, Symbol(spelling(origin)))
+        return MetaExpr(Expr(:call, Symbol(spelling(origin))))
     else
-        @error "not implemented yet"
+        @warn "not implemented yet"
+        return MetaExpr(Expr(:null))
     end
 end
 
-translate(cursor::CLParmDecl) = Symbol(spelling(cursor))
+translate(cursor::CLParmDecl) = MetaExpr(Symbol(spelling(cursor)), cursor)
 
 function translate(cursor::CLFunctionDecl)
     child_cursors = children(cursor)
     signature = Expr(:call, Symbol(spelling(cursor)))
     body = Expr(:null)
     for c in child_cursors
+        meta = translate(c)
         if kind(c) == CXCursor_ParmDecl
-            push!(signature.args, translate(c))
+            push!(signature.args, meta.expr)
         else
-            body = translate(c)
+            body = meta.expr
         end
     end
-    return Expr(:function, signature, body)
+    return MetaExpr(Expr(:function, signature, body))
 end

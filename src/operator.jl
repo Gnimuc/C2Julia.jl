@@ -19,31 +19,50 @@ const C2JULIA_UNARY_OPERATOR_MAP = Dict("+" => One2OneMappedUnaryOperator(),
 
 function translate(::PrefixIncrement, cursor::CLUnaryOperator, op::AbstractString, toks::TokenList)
     if typeof(toks[1]) == Punctuation
-        return Expr(:macrocall, Symbol("@+"), nothing, Symbol(toks[2].text))
+        ex = Expr(:macrocall, Symbol("@+"), nothing, Symbol(toks[2].text))
+        return MetaExpr(ex, cursor)
     else
-        return Expr(:(+=), Symbol(toks[1].text), 1)
+        ex = Expr(:(+=), Symbol(toks[1].text), 1)
+        return MetaExpr(ex, cursor)
     end
 end
 
 function translate(::PrefixDecrement, cursor::CLUnaryOperator, op::AbstractString, toks::TokenList)
     if typeof(toks[1]) == Punctuation
-        return Expr(:macrocall, Symbol("@-"), nothing, Symbol(toks[2].text))
+        ex = Expr(:macrocall, Symbol("@-"), nothing, Symbol(toks[2].text))
+        return MetaExpr(ex, cursor)
     else
-        return Expr(:(-=), Symbol(toks[1].text), 1)
+        ex = Expr(:(-=), Symbol(toks[1].text), 1)
+        return MetaExpr(ex, cursor)
     end
 end
 
 function translate(::AddressOperator, cursor::CLUnaryOperator, op::AbstractString, toks::TokenList)
-    return children(cursor) |> first |> translate
+    meta = translate(first(children(cursor)))
+    jltype_sym = clang2julia(type(meta.leafcursor))
+    if isdefined(Base, jltype_sym) && isbitstype(getfield(Base, jltype_sym))  # TODO: ismutable?
+        # immutable isbitstypes needs to be translated to `Ref`s to match C's behavior
+        meta.expr = Expr(:call, :Ref, meta.expr)
+    end
+    return meta
 end
 
 function translate(::IndirectionOperator, cursor::CLUnaryOperator, op::AbstractString, toks::TokenList)
-    return children(cursor) |> first |> translate
+    meta = translate(first(children(cursor)))
+    jltype_sym = clang2julia(type(meta.leafcursor))
+    if jltype_sym isa Expr
+        # dirty workaround
+        jltype_sym = jltype_sym.args[2]
+    end
+    if isdefined(Base, jltype_sym) && isbitstype(getfield(Base, jltype_sym))  # TODO: ismutable?
+        meta.expr = Expr(:ref, meta.expr)
+    end
+    return meta
 end
 
 function translate(::One2OneMappedUnaryOperator, cursor::CLUnaryOperator, op::AbstractString, toks::TokenList)
-    operand = children(cursor) |> first |> translate
-    Expr(:call, Symbol(op), operand)
+    operand_meta = translate(first(children(cursor)))
+    return MetaExpr(Expr(:call, Symbol(op), operand_meta.expr), cursor)
 end
 
 function translate(cursor::CLUnaryOperator)
@@ -108,7 +127,7 @@ function translate(cursor::CLBinaryOperator)
         end
     end
     child_cursors = children(cursor)
-    lhs = first(child_cursors) |> translate
-    rhs = last(child_cursors) |> translate
-    return Expr(:call, Symbol(op), lhs, rhs)
+    lhs_meta = translate(first(child_cursors))
+    rhs_meta = translate(last(child_cursors))
+    return MetaExpr(Expr(:call, Symbol(op), lhs_meta.expr, rhs_meta.expr))
 end

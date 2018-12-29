@@ -18,7 +18,7 @@ int operators(void) {
     x--;
 
     int *xp = &x;
-    *xp;
+    *xp = 1;
 
 	(bool)(z+1);
 

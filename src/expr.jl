@@ -1,9 +1,11 @@
-translate(cursor::CLDeclRefExpr) = Symbol(spelling(cursor))
-translate(cursor::CLParenExpr) = translate(children(cursor)[])
+translate(cursor::CLDeclRefExpr) = MetaExpr(Symbol(spelling(cursor)), cursor)
+translate(cursor::CLParenExpr) = translate(first(children(cursor)))
 
 function translate(cursor::CLMemberRefExpr)
     sym = Symbol(spelling(cursor))
-    return Expr(:(.), translate(children(cursor)[]), Meta.quot(sym))
+    meta = translate(first(children(cursor)))
+    meta.expr = Expr(:(.), meta.expr, Meta.quot(sym))
+    return meta
 end
 
 function translate(cursor::CLCStyleCastExpr)
@@ -12,36 +14,40 @@ function translate(cursor::CLCStyleCastExpr)
     if jltype_sym == :Cvoid
         return translate(last(child_cursors))  # don't cast anything to Nothing
     else
-        return Expr(:call, jltype_sym, translate(last(child_cursors)))
+        meta = translate(last(child_cursors))
+        meta.expr = Expr(:call, jltype_sym, meta.expr)
+        return meta
     end
 end
 
 function translate(cursor::CLUnexposedExpr)
     child_cursors = children(cursor)
-    if length(child_cursors) == 1
-        translate(child_cursors[])
-    else
-        @warn "translate subroutine for $cursor is not implemented." dumpobj(cursor)
-        return Expr(:null)
-    end
+    # if length(child_cursors) == 1
+    return translate(first(child_cursors))
+    # else
+    #     @warn "translate subroutine for $cursor is not implemented."
+    #     return Expr(:null)
+    # end
 end
 
 function translate(cursor::CLUnaryExpr)
     child_cursors = children(cursor)
-    if length(child_cursors) == 1
-        translate(child_cursors[])
-    else
-        @warn "translate subroutine for $cursor is not implemented." dumpobj(cursor)
-        return Expr(:null)
-    end
+    # if length(child_cursors) == 1
+    return translate(first(child_cursors))
+    # else
+    #     @warn "translate subroutine for $cursor is not implemented."
+    #     return Expr(:null)
+    # end
 end
 
 function translate(cursor::CLCallExpr)
     child_cursors = children(cursor)
     func_name = spelling(cursor)
     func_expr = Expr(:call, Symbol(func_name))
+    meta = MetaExpr[]
     for c in child_cursors[2:end]
-        push!(func_expr.args, translate(c))
+        meta = translate(c)
+        push!(func_expr.args, meta.expr)
     end
-    return func_expr
+    return MetaExpr(func_expr)
 end

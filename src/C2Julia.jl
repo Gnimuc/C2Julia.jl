@@ -9,6 +9,9 @@ translate(cursor::CLCursor) = "not implemented yet"
 include("CSyntax.jl")
 using .CSyntax
 
+include("types.jl")
+export MetaExpr
+
 include("literal.jl")
 include("operator.jl")
 include("expr.jl")

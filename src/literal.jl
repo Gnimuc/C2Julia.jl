@@ -47,12 +47,25 @@ function translate(cursor::CLIntegerLiteral)
     if tok.text != "0" &&
        startswith(tok.text, "0") &&
        !startswith(lowercase(tok.text), "0x")
-        Meta.parse("0o"*literally(tok))
+        ex = Meta.parse("0o"*literally(tok))
+        return MetaExpr(ex, cursor)
     else
-        Meta.parse(literally(tok))
+        ex = Meta.parse(literally(tok))
+        return MetaExpr(ex, cursor)
     end
 end
 
-translate(cursor::CLFloatingLiteral) = Meta.parse(literally(tokenize(cursor)[1]))
-translate(cursor::CLCharacterLiteral) = Meta.parse(tokenize(cursor)[1].text)
-translate(cursor::CLStringLiteral) = Meta.parse(tokenize(cursor)[1].text)
+function translate(cursor::CLFloatingLiteral)
+    ex = tokenize(cursor)[1] |> literally |> Meta.parse
+    return MetaExpr(ex, cursor)
+end
+
+function translate(cursor::CLCharacterLiteral)
+    ex = tokenize(cursor)[1].text |> Meta.parse
+    return MetaExpr(ex, cursor)
+end
+
+function translate(cursor::CLStringLiteral)
+    ex = tokenize(cursor)[1].text |> Meta.parse
+    return MetaExpr(ex, cursor)
+end
