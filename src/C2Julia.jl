@@ -4,7 +4,10 @@ using Clang
 using Clang.LibClang
 import Clang: TokenList
 
-translate(cursor::CLCursor) = (@warn cursor; MetaExpr("not implemented yet"))
+function translate(cursor::CLCursor)
+    expr = Expr(:macrocall, Symbol("@error"), nothing, "not implemented yet or unknown bugs")
+    return MetaExpr(expr, cursor)
+end
 
 include("CSyntax.jl")
 using .CSyntax

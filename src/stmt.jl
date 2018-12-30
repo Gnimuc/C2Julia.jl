@@ -128,7 +128,6 @@ function translate(cursor::CLReturnStmt)
     if isempty(child_cursors)
         return MetaExpr(Expr(:return, nothing), cursor)
     else
-        @show translate(first(child_cursors))
         meta = translate(first(child_cursors))
         meta.expr = Expr(:return, meta.expr)
         return meta

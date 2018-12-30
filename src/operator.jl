@@ -119,20 +119,36 @@ const C2JULIA_BINARY_OPERATOR_MAP = Dict("+" => ArithmeticBinaryOperator(),
                                          "%=" => AssignmentBinaryOperator(),
                                         )
 
+function countparens(cursor::CLBinaryOperator)
+    n = 0
+    toks = tokenize(cursor)
+    for tok in toks
+        txt = tok.text
+        if txt == "("
+            n += 1
+        else
+            break
+        end
+    end
+    return n
+end
+
 function translate(cursor::CLBinaryOperator)
     # hmm, this is just a workaround, pending https://reviews.llvm.org/D10833
+    paren_num = countparens(cursor)
     child_cursors = children(cursor)
     lhs_cursor = first(child_cursors)
     rhs_cursor = last(child_cursors)
-    lhs_toklist = tokenize(lhs_cursor)
-    rhs_toklist = tokenize(rhs_cursor)
-    GC.@preserve lhs_toklist rhs_toklist begin
-        lhs_toks = collect(lhs_toklist)
-        rhs_toks = collect(rhs_toklist)
+    tmp_cursor = lhs_cursor
+    for i = 1:paren_num-1
+        xxx = children(tmp_cursor)
+        tmp_cursor = first(children(tmp_cursor))
+    end
+    GC.@preserve tmp_cursor begin
+        lhs_last_idx = length(tokenize(tmp_cursor))
         toks = tokenize(cursor)
-        toksdiff = setdiff(toks, union(lhs_toks, rhs_toks))
         op = ""
-        for tok in toksdiff
+        for tok in collect(toks)[lhs_last_idx:end]
             txt = tok.text
             if typeof(tok) == Punctuation && haskey(C2JULIA_BINARY_OPERATOR_MAP, txt)
                 op = txt
