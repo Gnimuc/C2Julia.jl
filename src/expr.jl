@@ -1,5 +1,24 @@
 translate(cursor::CLDeclRefExpr) = MetaExpr(Symbol(spelling(cursor)), cursor)
 
+function translate(cursor::CLInitListExpr)
+    child_cursors = children(cursor)
+    list = []
+    for c in child_cursors
+        literal_meta = translate(c)
+        push!(list, literal_meta.expr)
+    end
+    return MetaExpr(Expr(:vect, list...), cursor)
+end
+
+function translate(cursor::CLArraySubscriptExpr)
+    child_cursors = children(cursor)
+    first_meta = translate(first(child_cursors))
+    last_meta = translate(last(child_cursors))
+    # Julia is 1-based
+    idx = last_meta.expr isa Number ? last_meta.expr+1 : Expr(:call, :+, last_meta.expr, 1)
+    return MetaExpr(Expr(:ref, first_meta.expr, idx), cursor)
+end
+
 function getranges(cursor::CLCursor)
     tu = clang_Cursor_getTranslationUnit(cursor)
     source_range = clang_getCursorExtent(cursor)
@@ -31,7 +50,7 @@ function translate(cursor::CLParenExpr)
         tu = clang_Cursor_getTranslationUnit(cursor)
         toks = Clang.TokenList(tu, expanded)
         code = mapreduce(x->x.text, *, collect(toks))
-        expr = Expr(:macrocall, Symbol("@error"), nothing, code)
+        expr = Expr(:macrocall, Symbol("@warn"), nothing, code)
         return MetaExpr(expr, cursor)
     end
 end

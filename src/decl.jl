@@ -2,10 +2,16 @@ function translate(cursor::CLVarDecl)
     child_cursors = children(cursor)
     cursor_sym = Symbol(spelling(cursor))
     if isempty(child_cursors)
+        # plain decl
         return MetaExpr(cursor_sym, cursor)
-    else
+    elseif length(child_cursors) == 1
         meta = translate(first(child_cursors))
         meta.expr = Expr(:(=), cursor_sym, meta.expr)
+        return meta
+    else
+        meta = translate(first(child_cursors))
+        list_meta = translate(last(child_cursors))
+        meta.expr = Expr(:(=), cursor_sym, list_meta.expr)
         return meta
     end
 end
