@@ -2,17 +2,20 @@ function translate(cursor::CLVarDecl)
     child_cursors = children(cursor)
     cursor_sym = Symbol(spelling(cursor))
     if isempty(child_cursors)
-        # plain decl
         return MetaExpr(cursor_sym, cursor)
     elseif length(child_cursors) == 1
-        meta = translate(first(child_cursors))
-        meta.expr = Expr(:(=), cursor_sym, meta.expr)
-        return meta
+        var_meta = translate(first(child_cursors))
+        var_meta.expr = Expr(:(=), cursor_sym, var_meta.expr)
+        return var_meta
     else
-        meta = translate(first(child_cursors))
+        var_meta = translate(first(child_cursors))
         list_meta = translate(last(child_cursors))
-        meta.expr = Expr(:(=), cursor_sym, list_meta.expr)
-        return meta
+        if Meta.isexpr(var_meta.expr, :call)
+            push!(var_meta.expr.args, list_meta.expr.args...)
+        else
+            var_meta.expr = Expr(:(=), cursor_sym, list_meta.expr)
+        end
+        return var_meta
     end
 end
 

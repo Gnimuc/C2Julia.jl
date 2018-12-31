@@ -1,6 +1,10 @@
 #include "stddef.h"
 #include <stdbool.h>
 
+struct foo {
+	int x;
+};
+
 int operators(void) {
 	int x = 0;
     int y = 1;
@@ -23,6 +27,11 @@ int operators(void) {
 	(bool)(z+1);
 
 	(x == 0) && (y < 1) || (z == 3);
+
+	struct foo f = {x};
+	f.x += 1;
+
+	y = z ? 3 : 30;
 
     return 0;
 }

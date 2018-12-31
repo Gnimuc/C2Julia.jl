@@ -119,7 +119,7 @@ const C2JULIA_BINARY_OPERATOR_MAP = Dict("+" => ArithmeticBinaryOperator(),
                                          "%=" => AssignmentBinaryOperator(),
                                         )
 
-function countparens(cursor::CLBinaryOperator)
+function countparens(cursor)
     n = 0
     toks = tokenize(cursor)
     for tok in toks
@@ -133,7 +133,7 @@ function countparens(cursor::CLBinaryOperator)
     return n
 end
 
-function translate(cursor::CLBinaryOperator)
+function translate(cursor::Union{CLBinaryOperator,CLCompoundAssignOperator})
     # hmm, this is just a workaround, pending https://reviews.llvm.org/D10833
     paren_num = countparens(cursor)
     child_cursors = children(cursor)
@@ -159,4 +159,13 @@ function translate(cursor::CLBinaryOperator)
     lhs_meta = translate(lhs_cursor)
     rhs_meta = translate(rhs_cursor)
     return MetaExpr(Expr(:call, Symbol(op), lhs_meta.expr, rhs_meta.expr))
+end
+
+function translate(cursor::CLConditionalOperator)
+    child_cursors = children(cursor)
+    condition_meta = translate(child_cursors[1])
+    branch1_meta = translate(child_cursors[2])
+    branch2_meta = translate(child_cursors[3])
+    ex = Expr(:if, condition_meta.expr, branch1_meta.expr, branch2_meta.expr)
+    return MetaExpr(ex)
 end
