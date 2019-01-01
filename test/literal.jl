@@ -7,31 +7,31 @@ using Test
     GC.@preserve tu begin
         root_cursor = getcursor(tu)
         child_cursors = children(root_cursor)
-        decl = child_cursors[5]
+        decl = search(child_cursors, x->name(x)=="a")[]
         integer = children(decl)[]
         @test translate(integer).expr == 0
 
-        decl = child_cursors[6]
+        decl = search(child_cursors, x->name(x)=="b")[]
         float = children(decl)[]
         @test translate(float).expr == :(Float32(1.0))
 
-        decl = child_cursors[7]
+        decl = search(child_cursors, x->name(x)=="c")[]
         hex = children(decl)[]
         @test translate(hex).expr == :(0x10)
 
-        decl = child_cursors[8]
+        decl = search(child_cursors, x->name(x)=="d")[]
         hexu = children(decl)[]
         @test translate(hexu).expr == :(UInt32(0x10))
 
-        decl = child_cursors[9]
+        decl = search(child_cursors, x->name(x)=="e")[]
         oct = children(decl)[]
         @test translate(oct).expr == :(0o123)
 
-        decl = child_cursors[10]
+        decl = search(child_cursors, x->name(x)=="f")[]
         char = children(decl)[]
         @test translate(char).expr == :('f')
 
-        decl = child_cursors[11]
+        decl = search(child_cursors, x->name(x)=="g")[]
         str = children(decl)[]
         @test translate(str).expr == :("abcdefg")
     end
