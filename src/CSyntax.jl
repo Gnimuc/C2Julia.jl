@@ -7,6 +7,9 @@ export malloc, free
 export @+, @++, @-
 export @cfor, @switch
 
+# for ref indexing a string
+@inline Base.getindex(s::AbstractString) = s[1]
+
 """
 PrefixIncrement Operator
 """

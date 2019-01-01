@@ -34,7 +34,7 @@ using Test
         op = children(body)[15]
         @test string(translate(op).expr) == "x == 0 && y < 1 || z == 3"
         op = children(body)[16]
-        @test translate(op)[].expr == :(foo(x))
+        @test translate(op)[].expr == :(f = foo(x))
         op = children(body)[17]
         @test string(translate(op).expr) == "f.x += 1"
         op = children(body)[18]

@@ -18,21 +18,23 @@ const C2JULIA_UNARY_OPERATOR_MAP = Dict("+" => One2OneMappedUnaryOperator(),
                                         )
 
 function translate(::PrefixIncrement, cursor::CLUnaryOperator, op::AbstractString, toks::TokenList)
-    if typeof(toks[1]) == Punctuation
-        ex = Expr(:macrocall, Symbol("@++"), nothing, Symbol(toks[2].text))
+    oprand_cursor = children(cursor)[]
+    if typeof(first(toks)) == Punctuation
+        ex = Expr(:macrocall, Symbol("@++"), nothing, translate(oprand_cursor).expr)
         return MetaExpr(ex, cursor)
     else
-        ex = Expr(:(+=), Symbol(toks[1].text), 1)
+        ex = Expr(:(+=), translate(oprand_cursor).expr, 1)
         return MetaExpr(ex, cursor)
     end
 end
 
 function translate(::PrefixDecrement, cursor::CLUnaryOperator, op::AbstractString, toks::TokenList)
-    if typeof(toks[1]) == Punctuation
-        ex = Expr(:macrocall, Symbol("@-"), nothing, Symbol(toks[2].text))
+    oprand_cursor = children(cursor)[]
+    if typeof(first(toks)) == Punctuation
+        ex = Expr(:macrocall, Symbol("@-"), nothing, translate(oprand_cursor).expr)
         return MetaExpr(ex, cursor)
     else
-        ex = Expr(:(-=), Symbol(toks[1].text), 1)
+        ex = Expr(:(-=), translate(oprand_cursor).expr, 1)
         return MetaExpr(ex, cursor)
     end
 end
@@ -48,6 +50,7 @@ function translate(::AddressOperator, cursor::CLUnaryOperator, op::AbstractStrin
         # immutable isbitstypes needs to be translated to `Ref`s to match C's behavior
         meta.expr = Expr(:call, :Ref, meta.expr)
     end
+    meta.info = "AddressOperator"
     return meta
 end
 
@@ -117,6 +120,10 @@ const C2JULIA_BINARY_OPERATOR_MAP = Dict("+" => ArithmeticBinaryOperator(),
                                          "*=" => AssignmentBinaryOperator(),
                                          "/=" => AssignmentBinaryOperator(),
                                          "%=" => AssignmentBinaryOperator(),
+                                         "|=" => AssignmentBinaryOperator(),
+                                         "&=" => AssignmentBinaryOperator(),
+                                         "<<=" => AssignmentBinaryOperator(),
+                                         ">>=" => AssignmentBinaryOperator(),
                                         )
 
 function countparens(cursor)

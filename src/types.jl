@@ -7,8 +7,11 @@ Symbols, Exprs, Numbers, Chars, Strings
 mutable struct MetaExpr
     expr::Union{Symbol,Expr,Number,AbstractChar,AbstractString}
     leafcursor::CLCursor
+    info::String
 end
+MetaExpr(x, c) = MetaExpr(x, c, "")
 MetaExpr(x) = MetaExpr(x, C2JULIA_NULL_CURSOR)
+
 
 Base.length(x::MetaExpr) = 1
 Base.iterate(x::MetaExpr) = (x, nothing)
