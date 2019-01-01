@@ -111,16 +111,11 @@ end
 
 function translate(cursor::CLForStmt)
     init, cond, inc, body = get_init_cond_inc_body(cursor)
-    let_expr = Expr(:let)
-    if init.expr == Expr(:null)
-        push!(let_expr.args, Expr(:block))
-    else
-        push!(let_expr.args, init.expr)
+    if init isa Vector{MetaExpr}
+        init = init[]
     end
-    condition = cond.expr == Expr(:null) ? true : cond.expr
-    inc.expr != Expr(:null) && push!(body.expr.args, inc.expr)
-    push!(let_expr.args, Expr(:while, condition, body.expr))
-    return MetaExpr(let_expr)
+    for_expr = Expr(:macrocall, Symbol("@cfor"), nothing, init.expr, cond.expr, inc.expr, body.expr)
+    return MetaExpr(for_expr)
 end
 
 function translate(cursor::CLReturnStmt)

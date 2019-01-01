@@ -42,22 +42,15 @@ using Test
             loop_func = search(root_cursor, "loop_stmt")[1]
             body = children(loop_func)[1]
             for_stmt = children(body)[4]
-            expr = :(let j = 0
-                        while j < 10
-                            x = x - 1
-                            j = j + 1
-                        end
-                    end)
+            expr = Expr(:macrocall, Symbol("@cfor"), nothing,
+                        :(j=0), :(j<10), :(j=j+1), Expr(:block, :(x = x - 1)))
             x = Base.remove_linenums!(expr)
             y = translate(for_stmt)
             @test string(x) == string(y)
 
             infinite_stmt = children(body)[10]
-            expr = :(let
-                        while true
-                            x = 0
-                        end
-                    end)
+            expr = Expr(:macrocall, Symbol("@cfor"), nothing,
+                        nothing, nothing, nothing, Expr(:block, :(x = 0)))
             x = Base.remove_linenums!(expr)
             y = translate(infinite_stmt)
             @test string(x) == string(y)

@@ -18,7 +18,7 @@ using Test
         op = children(body)[7]
         @test translate(op).expr == :(Cint(z))
         op = children(body)[8]
-        @test string(translate(op)) == "@+ y"
+        @test string(translate(op)) == "@++ y"
         op = children(body)[9]
         @test translate(op).expr == :(y+=1)
         op = children(body)[10]

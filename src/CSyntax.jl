@@ -4,8 +4,8 @@ const malloc = Base.Libc.malloc
 const free = Base.Libc.free
 export malloc, free
 
-export @+, @-
-export @switch
+export @+, @++, @-
+export @cfor, @switch
 
 """
 PrefixIncrement Operator
@@ -18,6 +18,7 @@ macro +(x)
         tmp
     end
 end
+@eval const $(Symbol("@++")) = $(Symbol("@+"))
 
 """
 PrefixDecrement Operator
@@ -29,6 +30,21 @@ macro -(x)
         $(esc(x)) -= 1
         tmp
     end
+end
+# @-- is invalid
+
+macro cfor(init, cond, inc, body)
+    let_expr = Expr(:let, Expr(:block))
+    if !(Meta.isexpr(init, :block) && isempty(init.args) || Meta.isexpr(init, :null))
+        push!(let_expr.args[1].args, init)
+    end
+    condition = cond
+    if Meta.isexpr(condition, :block) && isempty(condition.args) || Meta.isexpr(init, :null)
+        condition = true
+    end
+    Meta.isexpr(inc, :block) && isempty(inc.args) || Meta.isexpr(init, :null) || push!(body.args, inc)
+    push!(let_expr.args, Expr(:while, condition, body))
+    return esc(let_expr)
 end
 
 # Inspired by dcjones's Switch.jl

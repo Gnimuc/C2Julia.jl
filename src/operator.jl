@@ -19,7 +19,7 @@ const C2JULIA_UNARY_OPERATOR_MAP = Dict("+" => One2OneMappedUnaryOperator(),
 
 function translate(::PrefixIncrement, cursor::CLUnaryOperator, op::AbstractString, toks::TokenList)
     if typeof(toks[1]) == Punctuation
-        ex = Expr(:macrocall, Symbol("@+"), nothing, Symbol(toks[2].text))
+        ex = Expr(:macrocall, Symbol("@++"), nothing, Symbol(toks[2].text))
         return MetaExpr(ex, cursor)
     else
         ex = Expr(:(+=), Symbol(toks[1].text), 1)
