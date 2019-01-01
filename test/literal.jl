@@ -3,7 +3,7 @@ using Clang
 using Test
 
 @testset "literal trivial" begin
-    tu = parse_header(joinpath(@__DIR__, "c", "literal.h"))
+    tu = parse_header(joinpath(@__DIR__, "c", "literal.h"), includes=[LLVM_INCLUDE])
     GC.@preserve tu begin
         root_cursor = getcursor(tu)
         child_cursors = children(root_cursor)

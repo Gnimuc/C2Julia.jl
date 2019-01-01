@@ -3,7 +3,7 @@ using Clang
 using Test
 
 @testset "unary operator" begin
-    tu = parse_header(joinpath(@__DIR__, "c", "operator.h"))
+    tu = parse_header(joinpath(@__DIR__, "c", "operator.h"), includes=[LLVM_INCLUDE])
     GC.@preserve tu begin
         root_cursor = getcursor(tu)
         child_cursors = children(root_cursor)

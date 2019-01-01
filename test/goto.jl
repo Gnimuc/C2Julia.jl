@@ -3,7 +3,7 @@ using Clang
 using Test
 
 @testset "goto" begin
-    tu = parse_header(joinpath(@__DIR__, "c", "goto.h"))
+    tu = parse_header(joinpath(@__DIR__, "c", "goto.h"), includes=[LLVM_INCLUDE])
     GC.@preserve tu begin
         root_cursor = getcursor(tu)
         op_func = search(root_cursor, "goto_func")[1]

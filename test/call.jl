@@ -4,7 +4,7 @@ using Clang
 using Test
 
 @testset "call" begin
-    tu = parse_header(joinpath(@__DIR__, "c", "call.h"))
+    tu = parse_header(joinpath(@__DIR__, "c", "call.h"), includes=[LLVM_INCLUDE])
     GC.@preserve tu begin
         root_cursor = getcursor(tu)
         caller_cursor = search(root_cursor, "caller")[]

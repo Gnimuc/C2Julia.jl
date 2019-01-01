@@ -28,7 +28,7 @@ include("vsSwitch.jl")
 end
 
 @testset "switch" begin
-    tu = parse_header(joinpath(@__DIR__, "c", "switch.h"))
+    tu = parse_header(joinpath(@__DIR__, "c", "switch.h"), includes=[LLVM_INCLUDE])
     GC.@preserve tu begin
         root_cursor = getcursor(tu)
         switch_func = search(root_cursor, "switch_func")[1]

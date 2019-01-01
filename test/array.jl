@@ -3,7 +3,7 @@ using Clang
 using Test
 
 @testset "array" begin
-    tu = parse_header(joinpath(@__DIR__, "c", "array.h"))
+    tu = parse_header(joinpath(@__DIR__, "c", "array.h"), includes=[LLVM_INCLUDE])
     GC.@preserve tu begin
         root_cursor = getcursor(tu)
         func = search(root_cursor, "array")[1]
