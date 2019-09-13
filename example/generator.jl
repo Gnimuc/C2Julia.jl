@@ -3,13 +3,12 @@ using Clang
 using Clang.LibClang
 
 lsoda = joinpath(@__DIR__, "liblsoda")
-liblsoda_include = joinpath(lsoda, "src")
-liblsoda_c = joinpath(lsoda, "src", "lsoda.c")
+liblsoda_c = joinpath(lsoda, "lsoda.c")
 
 ctx = DefaultContext()
 
 std_headers = find_std_headers()
-compiler_flags = ["-I$libcvode_include", "-I$LLVM_INCLUDE", ("-I".*std_headers)...]
+compiler_flags = ["-I$LLVM_INCLUDE", ("-I".*std_headers)...]
 
 push!(ctx.trans_units, TranslationUnit(ctx.index,
                                        liblsoda_c,
