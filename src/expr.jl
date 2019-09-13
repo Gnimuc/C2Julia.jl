@@ -15,7 +15,7 @@ function translate(cursor::CLArraySubscriptExpr)
     first_meta = translate(first(child_cursors))
     last_meta = translate(last(child_cursors))
     # Julia is 1-based
-    idx = last_meta.expr isa Number ? last_meta.expr+1 : Expr(:call, :+, last_meta.expr, 1)
+    idx = last_meta.expr isa Number ? last_meta.expr : Expr(:call, :+, last_meta.expr, 1)
     return MetaExpr(Expr(:ref, first_meta.expr, idx), cursor)
 end
 
