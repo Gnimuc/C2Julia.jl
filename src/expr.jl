@@ -88,13 +88,19 @@ function translate(cursor::CLCallExpr)
     child_cursors = children(cursor)
     func_name = spelling(cursor)
     func_expr = Expr(:call, Symbol(func_name))
+    has_address_op = false
     for c in child_cursors[2:end]
         meta = translate(c)
         if meta.info == "AddressOperator"
+            has_address_op = true
             push!(func_expr.args, Expr(:&, meta.expr.args[2]))
         else
             push!(func_expr.args, meta.expr)
         end
     end
-    return MetaExpr(Expr(:macrocall, Symbol("@c"), nothing, func_expr))
+    if has_address_op
+        return MetaExpr(Expr(:macrocall, Symbol("@c"), nothing, func_expr))
+    else
+        return MetaExpr(func_expr)
+    end
 end

@@ -80,7 +80,7 @@ function get_init_cond_inc_body(cursor::CLForStmt)
     left_paren_idx = 2
     right_paren_idx = findfirst(x->x.text==")", toks)
     idxs = findall(x->x.text==";", toks[1:right_paren_idx])
-    @show toks
+
     idx_count = 1
     if idxs[1] == left_paren_idx+1
         init = MetaExpr(Expr(:null), cursor)
