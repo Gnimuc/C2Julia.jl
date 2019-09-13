@@ -1,5 +1,5 @@
 using C2Julia
-using C2Julia.CSyntax
+using CSyntax
 using Clang
 using Test
 

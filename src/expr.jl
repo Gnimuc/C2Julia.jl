@@ -88,30 +88,13 @@ function translate(cursor::CLCallExpr)
     child_cursors = children(cursor)
     func_name = spelling(cursor)
     func_expr = Expr(:call, Symbol(func_name))
-    let_expr = Expr(:let, Expr(:block))
-    body_block = Expr(:block)
-    deref_exprs = Expr[]
-    op_count = 0
     for c in child_cursors[2:end]
         meta = translate(c)
         if meta.info == "AddressOperator"
-            op_count += 1
-            ref_sym = Symbol("_REF$op_count")  # _REF1
-            ref_assignment = Expr(:(=), ref_sym, meta.expr)  # _REF1 = Ref(x)
-            push!(let_expr.args[1].args, ref_assignment)
-            push!(func_expr.args, ref_sym)  # f(_REF1)
-            origin_sym = meta.expr isa Symbol ? meta.expr : meta.expr.args[end]
-            push!(deref_exprs, Expr(:(=), origin_sym, Expr(:ref, ref_sym)))  # x = _REF1[]
+            push!(func_expr.args, Expr(:&, meta.expr.args[2]))
         else
             push!(func_expr.args, meta.expr)
         end
     end
-    if op_count != 0
-        ret_expr = Expr(:(=), Symbol("_RET"), func_expr)
-        push!(body_block.args, ret_expr, deref_exprs..., Symbol("_RET"))
-        push!(let_expr.args, body_block)
-        return MetaExpr(let_expr)
-    else
-        return MetaExpr(func_expr)
-    end
+    return MetaExpr(Expr(:macrocall, Symbol("@c"), nothing, func_expr))
 end
