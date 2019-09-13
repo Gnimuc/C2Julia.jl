@@ -110,11 +110,8 @@ function get_init_cond_inc_body(cursor::CLForStmt)
 end
 
 function translate(cursor::CLForStmt)
-    init, cond, inc, body = get_init_cond_inc_body(cursor)
-    if init isa Vector{MetaExpr}
-        init = init[]
-    end
-    for_expr = Expr(:macrocall, Symbol("@cfor"), nothing, init.expr, cond.expr, inc.expr, body.expr)
+    body = translate(last(children(cursor)))
+    for_expr = body.expr
     return MetaExpr(for_expr)
 end
 

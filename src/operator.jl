@@ -2,7 +2,7 @@ abstract type UnaryOperator end
 
 for op in [:PrefixIncrement, :PrefixDecrement,
            :AddressOperator, :IndirectionOperator,
-           :One2OneMappedUnaryOperator]
+           :One2OneMappedUnaryOperator, :UnknownOperator]
     @eval struct $op <: UnaryOperator end
 end
 
@@ -15,6 +15,7 @@ const C2JULIA_UNARY_OPERATOR_MAP = Dict("+" => One2OneMappedUnaryOperator(),
                                         "--" => PrefixDecrement(),
                                         "&" => AddressOperator(),
                                         "*" => IndirectionOperator(),
+                                        "" => UnknownOperator()
                                         )
 
 function translate(::PrefixIncrement, cursor::CLUnaryOperator, op::AbstractString, toks::TokenList)
@@ -46,10 +47,10 @@ function translate(::AddressOperator, cursor::CLUnaryOperator, op::AbstractStrin
         # dirty workaround
         jltype_sym = jltype_sym.args[2]
     end
-    if isdefined(Base, jltype_sym) && isbitstype(getfield(Base, jltype_sym))  # TODO: ismutable?
+    # if isdefined(Base, jltype_sym) && isbitstype(getfield(Base, jltype_sym))  # TODO: ismutable?
         # immutable isbitstypes needs to be translated to `Ref`s to match C's behavior
         meta.expr = Expr(:call, :Ref, meta.expr)
-    end
+    # end
     meta.info = "AddressOperator"
     return meta
 end
@@ -61,15 +62,21 @@ function translate(::IndirectionOperator, cursor::CLUnaryOperator, op::AbstractS
         # dirty workaround
         jltype_sym = jltype_sym.args[2]
     end
-    if isdefined(Base, jltype_sym) && isbitstype(getfield(Base, jltype_sym))  # TODO: ismutable?
+    # if isdefined(Base, jltype_sym) && isbitstype(getfield(Base, jltype_sym))  # TODO: ismutable?
         meta.expr = Expr(:ref, meta.expr)
-    end
+    # end
     return meta
 end
 
 function translate(::One2OneMappedUnaryOperator, cursor::CLUnaryOperator, op::AbstractString, toks::TokenList)
     operand_meta = translate(first(children(cursor)))
     return MetaExpr(Expr(:call, Symbol(op), operand_meta.expr), cursor)
+end
+
+
+function translate(::UnknownOperator, cursor::CLUnaryOperator, op::AbstractString, toks::TokenList)
+    operand_meta = translate(first(children(cursor)))
+    return MetaExpr(Expr(:call, Symbol("?_?"), operand_meta.expr), cursor)
 end
 
 function translate(cursor::CLUnaryOperator)
@@ -84,6 +91,9 @@ function translate(cursor::CLUnaryOperator)
                 break
             end
         end
+    end
+    if op == ""
+        @warn "failed to extract unary operator for $cursor !!!"
     end
     return translate(C2JULIA_UNARY_OPERATOR_MAP[op], cursor, op, toks)
 end
