@@ -33,7 +33,7 @@ function translate(cursor::CLIfStmt)
     for c in child_cursors
         if kind(c) == CXCursor_IfStmt
             elseif_expr = translate(c).expr
-            elseif_expr.head = :elseif
+            elseif_expr.head = :if
             push!(if_expr.args, elseif_expr)
         else
             push!(if_expr.args, translate(c).expr)

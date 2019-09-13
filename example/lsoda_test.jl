@@ -606,7 +606,7 @@ function successreturn(y, t, itask, ihit, tcrit, istate)
     y[i + 1] = yp1[i + 1]
     t[] = tn
     if itask == 4 || itask == 5
-        elseif ihit
+        if ihit
             t[] = tcrit
         end
     end
@@ -748,7 +748,7 @@ function orderswitch(rhup, dsm, pdh, rh, orderflag)
     end
     if meth == 1
         if (rh[] * pdh[]) * 1.00001 < sm1[newq + 1]
-            elseif kflag == 0 && rh[] < 1.1
+            if kflag == 0 && rh[] < 1.1
                 ialth = 3
                 return
             end
@@ -1069,7 +1069,7 @@ function successreturn(y, t, itask, ihit, tcrit, istate)
     y[i + 1] = yp1[i + 1]
     t[] = tn
     if itask == 4 || itask == 5
-        elseif ihit
+        if ihit
             t[] = tcrit
         end
     end
@@ -2410,7 +2410,7 @@ function orderswitch(rhup, dsm, pdh, rh, orderflag)
     end
     if meth == 1
         if (rh[] * pdh[]) * 1.00001 < sm1[newq + 1]
-            elseif kflag == 0 && rh[] < 1.1
+            if kflag == 0 && rh[] < 1.1
                 ialth = 3
                 return
             end
