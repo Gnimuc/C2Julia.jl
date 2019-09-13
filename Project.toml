@@ -4,6 +4,7 @@ authors = ["Gnimuc <qiyupei@gmail.com>"]
 version = "0.1.0"
 
 [deps]
+CSyntax = "ea656a56-6ca6-5dda-bba5-7b6963a5f74c"
 Clang = "40e3b903-d033-50b4-a0cc-940c62c95e31"
 
 [extras]
