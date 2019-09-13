@@ -81,7 +81,11 @@ end
 
 function translate(cursor::CLUnaryExpr)
     child_cursors = children(cursor)
-    return translate(first(child_cursors))
+    if isempty(child_cursors)
+        return MetaExpr(Expr(:null))
+    else
+        return translate(first(child_cursors))
+    end
 end
 
 function translate(cursor::CLCallExpr)

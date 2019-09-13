@@ -2,9 +2,9 @@ using C2Julia
 using Clang
 using Clang.LibClang
 
-cvode = joinpath(homedir(), "Codes", "CVODE")
-libcvode_include = joinpath(cvode, "include")
-libcvode_c = joinpath(cvode, "source", "cvode.c")
+lsoda = joinpath(@__DIR__, "liblsoda")
+liblsoda_include = joinpath(lsoda, "src")
+liblsoda_c = joinpath(lsoda, "src", "lsoda.c")
 
 ctx = DefaultContext()
 
@@ -12,7 +12,7 @@ std_headers = find_std_headers()
 compiler_flags = ["-I$libcvode_include", "-I$LLVM_INCLUDE", ("-I".*std_headers)...]
 
 push!(ctx.trans_units, TranslationUnit(ctx.index,
-                                       libcvode_c,
+                                       liblsoda_c,
                                        compiler_flags,
                                        CXTranslationUnit_None))
 
@@ -23,7 +23,7 @@ ctx.children = children(root_cursor)
 funs = filter(x -> x isa CLFunctionDecl && filename(x)==header, ctx.children)
 cfuns = map(x->search(root_cursor, spelling(x)) |> last, funs)
 
-outpath = joinpath(@__DIR__, "cvode_test.jl")
+outpath = joinpath(@__DIR__, "lsoda_test.jl")
 open(outpath, "w+") do f
     for cfun in cfuns
         println(f, translate(cfun).expr)
